@@ -98,12 +98,27 @@ class Block extends GameItem {
     constructor(image) {
         super(image, null, new Vector(0, -44), 0, 0);
     }
+    moveLeft() {
+        const leftSidePlayingField = this.playingFieldPosition.x - this.playingFieldSize.x / 2;
+        const leftSideBlock = this.position.x - (this.blockWidth / 2) * 44;
+        if (leftSideBlock - 44 >= leftSidePlayingField) {
+            this._position = new Vector(this._position.x - 44, this._position.y);
+        }
+    }
+    moveRight() {
+        const rightSidePlayingField = this.playingFieldPosition.x + this.playingFieldSize.x / 2;
+        const rightSideBlock = this.position.x + (this.blockWidth / 2) * 44;
+        console.log(rightSidePlayingField, rightSideBlock);
+        if (rightSideBlock + 44 <= rightSidePlayingField) {
+            this._position = new Vector(this._position.x + 44, this._position.y);
+        }
+    }
     updatePlayingField(playingFieldPosition, playingFieldSize) {
         this.playingFieldPosition = playingFieldPosition;
         this.playingFieldSize = playingFieldSize;
     }
     draw(ctx) {
-        if (this._position === null) {
+        if (this.position === null) {
             const leftSide = this.playingFieldPosition.x - this.playingFieldSize.x / 2;
             let initialXPosition = leftSide + 3 * 44;
             if (this.blockWidth % 2 !== 0) {
@@ -202,11 +217,12 @@ class View {
 class LevelView extends View {
     constructor() {
         super(...arguments);
-        this.backgroundSize = new Vector(430, 700);
-        this.playingFieldSize = new Vector(294, 618);
+        this.backgroundSize = new Vector(446, 700);
+        this.playingFieldSize = new Vector(308, 618);
         this.availableBlocks = ["I", "L", "R", "S", "T"];
         this.delay = 250;
         this.blocksInPlay = [];
+        this.lastMoveDown = performance.now();
         this.lastMove = performance.now();
     }
     init(game) {
@@ -216,7 +232,16 @@ class LevelView extends View {
     }
     listen(input) {
         super.listen(input);
-        if (input.keyboard.isKeyDown(Input.KEY_LEFT)) {
+        const timeSinceLastMove = performance.now() - this.lastMove;
+        if (timeSinceLastMove > 200) {
+            if (input.keyboard.isKeyDown(Input.KEY_LEFT)) {
+                this.movingBlock.moveLeft();
+                this.lastMove = performance.now();
+            }
+            if (input.keyboard.isKeyDown(Input.KEY_RIGHT)) {
+                this.movingBlock.moveRight();
+                this.lastMove = performance.now();
+            }
         }
     }
     draw(ctx) {
@@ -230,9 +255,8 @@ class LevelView extends View {
     }
     move(canvas) {
         super.move(canvas);
-        if (this.movingBlock.position !== null && performance.now() - this.lastMove > this.delay) {
-            console.log(this.blocksInPlay);
-            this.lastMove = performance.now();
+        if (this.movingBlock.position !== null && performance.now() - this.lastMoveDown > this.delay) {
+            this.lastMoveDown = performance.now();
             this.movingBlock.move(canvas);
             const bottomField = this.playingFieldPosition.y + this.playingFieldSize.y / 2;
             const bottomBlock = this.movingBlock.position.y + (this.movingBlock.blockHeight / 2) * 44;
